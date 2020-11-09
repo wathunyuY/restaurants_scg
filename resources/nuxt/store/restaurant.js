@@ -53,13 +53,17 @@ export const actions = {
      */
     async getRestaurantsNextpage({ dispatch, commit, state }) {
         if (state.previous && state.next == state.previous) return; //Check duplicate token
+        let prev = state.previous; // Old prev previous for reset
         commit('setPrevious', state.next) // Set previous page token
         this.$axios.get(`api/find?next=${state.next}`).then(res => {
             if (res.status === 200) {
                 commit('insertLists', res.data.results) // Append restaurants
                 commit('setNext', res.data.next) // Set next page token
             }
-        }).catch(err => dispatch('buildError', err.response.data))
+        }).catch(err => {
+            commit('setPrevious', prev) // Reset previous value
+            dispatch('buildError', err.response.data)
+        })
 
     },
     /**
