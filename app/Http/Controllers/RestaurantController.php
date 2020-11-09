@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class RestaurantController extends Controller
@@ -25,6 +26,7 @@ class RestaurantController extends Controller
             }
             return response()->json($results);
         } catch (Throwable $e) {
+            Log::error($request->logs["id"], $e->getTrace());
             return response()->json($e->getMessage(), 500);
         }
     }

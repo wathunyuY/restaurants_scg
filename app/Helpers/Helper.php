@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Redis;
 
 if (!function_exists('findPlace')) {
@@ -37,18 +38,19 @@ if (!function_exists('findPlace')) {
                     $result["formatted_address"] = Arr::get($val, "formatted_address", "");
                     $result["geometry"] = Arr::get($val, "geometry", null);
                     $result["name"] = Arr::get($val, "name", "");
-                    $result["photos"] = Arr::has($val, "photos.0.photo_reference") ? $photo_request.Arr::get($val, "photos.0.photo_reference")."&key=".$API_KEY : $default_photo;
+                    $result["photos"] = Arr::has($val, "photos.0.photo_reference") ? $photo_request . Arr::get($val, "photos.0.photo_reference") . "&key=" . $API_KEY : $default_photo;
                     $result["rating"] = Arr::get($val, "rating", 0);
                     $result["user_ratings_total"] = Arr::get($val, "user_ratings_total", 0);
                     array_push($results["results"], $result);
                 }
                 if (isset($data["next_page_token"])) $results["next"] = $data["next_page_token"]; //Set next page token
             } else {
-                throw new \Exception($data["status"]);
+                Log::emergency($data["status"]); // log error status from google api 
+                throw new \Exception(getGoogleApiErrorText($data["status"]), 1);// Code 1 for flag google error text
             }
             return $results;
         } catch (Throwable $e) {
-            throw new \Exception($e->getMessage());
+            throw new \Exception($e->getCode() === 1 ? $e->getMessage() : "Something was wrong please come back later."); // throw google status when code =1 then throw nomal text 
         }
     }
 }
@@ -66,7 +68,7 @@ if (!function_exists('getCache')) {
             if (!empty($result)) return json_decode($result);
             return false;
         } catch (Throwable $e) {
-            throw new \Exception($e->getMessage());
+            report($e); //Just loggin , Not throw error
         }
     }
 }
@@ -81,7 +83,25 @@ if (!function_exists('setCache')) {
         try {
             Redis::set($key, json_encode($data), 'EX', env('REDIS_EXPIRED', false)); // expire in 10 days
         } catch (Throwable $e) {
-            throw new \Exception($e->getMessage());
+            report($e); //Just loggin , Not throw error
         }
+    }
+}
+
+if (!function_exists('googleApiErrorText')) {
+    /**
+     * Get text of error
+     * @param string $status error status from google place api
+     * @return string Error text
+     */
+    function getGoogleApiErrorText($status)
+    {
+        $errors = [
+            "OVER_QUERY_LIMIT" => 'over quota.',
+            "REQUEST_DENIED" => 'Something was wrong please come back later.',
+            "INVALID_REQUEST" => 'Something was wrong please come back later.',
+            "UNKNOWN_ERROR" => 'Indicates a server-side error please trying again may be successful.'
+        ];
+        return $errors[$status];
     }
 }

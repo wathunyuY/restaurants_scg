@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RestaurantController;
+use App\Http\Middleware\AfterCall;
 use App\Http\Middleware\CheckType;
 
 /*
@@ -19,4 +20,4 @@ use App\Http\Middleware\CheckType;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
-Route::get('find', 'App\Http\Controllers\RestaurantController@find')->middleware(CheckType::class);;
+Route::get('find', 'App\Http\Controllers\RestaurantController@find')->middleware(CheckType::class)->middleware(AfterCall::class);
