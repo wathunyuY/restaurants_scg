@@ -2,6 +2,7 @@ export const state = () => ({
     lists: [],
     keyword: 'Bang sue',
     next: null,
+    previous: null,
     typeCard: true,
     loading: false
 })
@@ -24,6 +25,9 @@ export const mutations = {
     },
     setLoading(state, val) {
         state.loading = val;
+    },
+    setPrevious(state, val) {
+        state.previous = val
     }
 }
 
@@ -48,10 +52,12 @@ export const actions = {
      * Get next list of restaurants by next page token
      */
     async getRestaurantsNextpage({ dispatch, commit, state }) {
+        if (state.previous && state.next == state.previous) return; //Check duplicate token
+        commit('setPrevious', state.next) // Set previous page token
         this.$axios.get(`api/find?next=${state.next}`).then(res => {
             if (res.status === 200) {
                 commit('insertLists', res.data.results) // Append restaurants
-                commit('setNext', res.data.next) // Set nex page token
+                commit('setNext', res.data.next) // Set next page token
             }
         }).catch(err => dispatch('buildError', err.response.data))
 
