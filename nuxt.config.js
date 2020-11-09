@@ -16,7 +16,7 @@ module.exports = laravelNuxt({
     components: true,
     modules: [
         // https://go.nuxtjs.dev/bootstrap
-        'bootstrap-vue/nuxt',
+        // 'bootstrap-vue/nuxt',
         '@nuxtjs/bootstrap-vue',
         // https://go.nuxtjs.dev/axios
         '@nuxtjs/axios',
