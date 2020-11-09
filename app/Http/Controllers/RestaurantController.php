@@ -3,36 +3,29 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Redis;
+use Throwable;
 
 class RestaurantController extends Controller
 {
     /**
      * Find Restaurants
-     * @param  Object {$request}    `keyword` : name of restaurant ,`next` : next page token 
+     * @param  Request $request    `keyword` : name of restaurant ,`next` : next page token 
      * @return Object "List of Restaurants and next page token"
      */
     public function find(Request $request)
-    {   
-        $results = Redis::get($request->redis_key);// Get restaurant from cache  ($request->redis_key : create from middleware "CheckType")
-        // Redis::del($request->redis_key);
-        if (empty($results)) { //Check result from cashe 
-            $results = findPlace($request->keyword, $request->next);
-            /** 
-             * Check error and save to cash
-             * save to cache when not error
-             * throw status 500 and error_text when error
-             */
-            if (!isset($results["error"])) {
-                if (count($results["results"]) > 0)
-                    Redis::set($request->redis_key, json_encode($results));
-            }else{
-                return response()->json($results["error"], 500);
+    {
+        try {
+            $results = getCache($request->redis_key); // Get restaurant from cache  ($request->redis_key : create from middleware "CheckType")
+            if (!$results) { //Check result from cashe 
+                $results = findPlace($request->keyword, $request->next);
+                if (count($results["results"]) > 0) // save to cache
+                    setCache($request->redis_key, $results);
+            } else { // flag
+                $results->is_cache = true;
             }
-        } else {// decode results from cache
-            $results = json_decode($results);
-            $results->is_cache = true;
+            return response()->json($results);
+        } catch (Throwable $e) {
+            return response()->json($e->getMessage(), 500);
         }
-        return response()->json($results, 200);
     }
 }

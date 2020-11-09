@@ -1,13 +1,21 @@
 <?php
 
-if (!function_exists('findPlace')) {
+use Illuminate\Support\Facades\Redis;
 
+if (!function_exists('findPlace')) {
+    /**
+     * Google plcae API calling 
+     * find restaurants by key or get get next page of restaurant
+     * @param string $keyword keyword about restaurant example : `Bang sue`
+     * @param bool $next String of next page token default false 
+     * @return array|string List of restaurants or Error text when something wrong
+     */
     function findPlace($keyword = "Bang sue", $next = false)
     {
         try {
-            $API_KEY = env('GOOGLE_API_KEY',false);
-            $request = env('GOOGLE_API_PLACE_HOST',false);
-            $photo_request = env('GOOGLE_API_PHOTO_HOST',false);
+            $API_KEY = env('GOOGLE_API_KEY', false);
+            $request = env('GOOGLE_API_PLACE_HOST', false);
+            $photo_request = env('GOOGLE_API_PHOTO_HOST', false);
 
             $params["key"]  = $API_KEY;
             if ($next) $params["pagetoken"] = $next;
@@ -15,7 +23,7 @@ if (!function_exists('findPlace')) {
                 $params["query"] = "$keyword";
                 $params["type"] = "restaurant";
             }
-            
+
             $request .= http_build_query($params);
             $json = file_get_contents($request); // Call google place api
             $data = json_decode($json, true);
@@ -35,12 +43,44 @@ if (!function_exists('findPlace')) {
                 }
                 if (isset($data["next_page_token"])) $results["next"] = $data["next_page_token"]; //Set next page token
             } else {
-                $results["error"] = $data["status"];
+                throw new \Exception($data["status"]);
             }
             return $results;
         } catch (Throwable $e) {
-            $results["error"] = "An error occurred in the server.";
-            return $results;
+            throw new \Exception($e->getMessage());
+        }
+    }
+}
+
+if (!function_exists('getCache')) {
+    /**
+     * Get cache from redis
+     * @param string $key key of data
+     * @return mixed saved data , false when data no found
+     */
+    function getCache($key)
+    {
+        try {
+            $result = Redis::get($key);
+            if (!empty($result)) return json_decode($result);
+            return false;
+        } catch (Throwable $e) {
+            throw new \Exception($e->getMessage());
+        }
+    }
+}
+if (!function_exists('setCache')) {
+    /**
+     * Save data to redis 
+     * @param string $key key of data
+     * @param mixed $data data to be save
+     */
+    function setCache($key = '', $data)
+    {
+        try {
+            Redis::set($key, json_encode($data), 'EX', env('REDIS_EXPIRED', false)); // expire in 10 days
+        } catch (Throwable $e) {
+            throw new \Exception($e->getMessage());
         }
     }
 }
