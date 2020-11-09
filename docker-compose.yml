@@ -1,0 +1,58 @@
+version: '3.1'
+services:
+  composer:
+    image: composer:2.0.4
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: [
+      'bash', '-c',
+      'composer install'
+    ]
+    
+  node:
+    image: node:12.18.3-slim
+    working_dir: /app
+    depends_on: 
+      - composer
+    volumes:
+      - .:/app
+    command: bash -c "npm install && npm run build"
+    
+  nginx:
+    image: nginx
+    volumes:
+      - ./dockerconfig/nginx/conf.d:/etc/nginx/conf.d
+      - .:/var/www/html
+    depends_on:
+      - php
+    networks:
+      - frontend
+    ports:
+      - 8000:80
+
+  php:
+    build: ./dockerconfig/php
+    volumes:
+      - ./dockerconfig/php/conf.d:/user/local/etc/php/conf.d
+      - .:/var/www/html
+    depends_on:
+      - composer
+    networks:
+      - frontend
+      - backend
+    expose:
+      - 9000
+      
+  redis:
+    image: redis
+    networks:
+      - backend
+    expose:
+      - 6379
+    volumes: 
+      - ./redis:/data
+      
+networks:
+  frontend:
+  backend:
