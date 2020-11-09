@@ -13,3 +13,4 @@ yarn-error.log
 .nuxt/
 .env.example
 public/_nuxt/
+redis/
