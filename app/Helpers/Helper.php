@@ -68,7 +68,7 @@ if (!function_exists('getCache')) {
             if (!empty($result)) return json_decode($result);
             return false;
         } catch (Throwable $e) {
-            report($e); //Just loggin , Not throw error
+            report($e); //Just logging , Not throw error
         }
     }
 }
@@ -83,7 +83,7 @@ if (!function_exists('setCache')) {
         try {
             Redis::set($key, json_encode($data), 'EX', env('REDIS_EXPIRED', false)); // expire in 10 days
         } catch (Throwable $e) {
-            report($e); //Just loggin , Not throw error
+            report($e); //Just logging , Not throw error
         }
     }
 }
